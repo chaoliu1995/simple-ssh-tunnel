@@ -22,17 +22,23 @@ public class Main {
         sessionConfig.put("StrictHostKeyChecking",config.getStrictHostKeyChecking());
         Session session = null;
         try{
+            Print.info("get session");
             session = jsch.getSession(config.getServerUser(),config.getServerHost(),config.getServerPort());
             session.setConfig(sessionConfig);
+            Print.info("connect...");
             session.connect();
             //本地端口转发
             //localPort, remoteHost, remotePort
+            Print.info("port forwarding...");
             session.setPortForwardingL(config.getLocalPort(),config.getRemoteHost(),config.getRemotePort());
             doShutDownWork(session);
+            Print.info("running...");
         }catch (Exception e){
             e.printStackTrace();
             if(session != null){
+                Print.info("disconnect...");
                 session.disconnect();
+                Print.info("disconnect end");
             }
         }
     }
@@ -60,8 +66,9 @@ public class Main {
         //注册新的虚拟机来关闭钩子
         run.addShutdownHook(new Thread(() -> {
             //程序结束时进行的操作
-            Print.info("关闭session");
+            Print.info("disconnect...");
             session.disconnect();
+            Print.info("disconnect end");
         }));
     }
 }
