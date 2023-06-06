@@ -39,7 +39,8 @@ public class SessionWatcherRunnable implements Runnable {
                     //连接成功后，重试次数置0
                     retryCount = 0;
                 } catch (Exception e) {
-                    Print.error("Reconnect Exception");
+                    Print.error("Reconnect Exception：" + e.getMessage());
+                    e.printStackTrace();
                     //throw new RuntimeException(e);
                     if(retryCount >= maxRetryCount){
                         break;
