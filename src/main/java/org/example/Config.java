@@ -11,6 +11,7 @@ public class Config {
     private Integer localPort;
     private String remoteHost;
     private Integer remotePort;
+    private Integer logLevel;
 
     public String getPrivateKeyPath() {
         return privateKeyPath;
@@ -82,5 +83,13 @@ public class Config {
 
     public void setRemotePort(Integer remotePort) {
         this.remotePort = remotePort;
+    }
+
+    public Integer getLogLevel() {
+        return logLevel;
+    }
+
+    public void setLogLevel(Integer logLevel) {
+        this.logLevel = logLevel;
     }
 }

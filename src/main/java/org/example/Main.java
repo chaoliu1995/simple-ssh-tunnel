@@ -15,6 +15,7 @@ public class Main {
         }
         Config config = readConfig(args[0]);
         JSch jsch = new JSch();
+        JSch.setLogger(new SimpleLogger(config.getLogLevel()));
         //添加私钥
         jsch.addIdentity(config.getPrivateKeyPath(),config.getPassphrase());
         Properties sessionConfig = new Properties();
@@ -27,14 +28,15 @@ public class Main {
             session.setConfig(sessionConfig);
             Print.info("connect...");
             session.connect();
+            Print.info("port forwarding...");
             //本地端口转发
             //localPort, remoteHost, remotePort
-            Print.info("port forwarding...");
             session.setPortForwardingL(config.getLocalPort(),config.getRemoteHost(),config.getRemotePort());
             doShutDownWork(session);
             Print.info("running...");
         }catch (Exception e){
-            e.printStackTrace();
+            Print.info("catch Exception");
+            Print.error(e.getMessage());
             if(session != null){
                 Print.info("disconnect...");
                 session.disconnect();
@@ -57,6 +59,7 @@ public class Main {
         config.setLocalPort(Integer.valueOf(properties.getProperty("localPort")));
         config.setRemoteHost(properties.getProperty("remoteHost"));
         config.setRemotePort(Integer.valueOf(properties.getProperty("remotePort")));
+        config.setLogLevel(Integer.valueOf(properties.getProperty("logLevel")));
         return config;
     }
 
@@ -66,6 +69,7 @@ public class Main {
         //注册新的虚拟机来关闭钩子
         run.addShutdownHook(new Thread(() -> {
             //程序结束时进行的操作
+            Print.info("program exit");
             Print.info("disconnect...");
             session.disconnect();
             Print.info("disconnect end");
