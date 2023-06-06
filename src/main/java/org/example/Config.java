@@ -2,7 +2,13 @@ package org.example;
 
 public class Config {
 
+    /**
+     * 私钥路径
+     */
     private String privateKeyPath;
+    /**
+     * 私钥密码
+     */
     private String passphrase;
     private String strictHostKeyChecking;
     private String serverUser;
@@ -11,7 +17,14 @@ public class Config {
     private Integer localPort;
     private String remoteHost;
     private Integer remotePort;
+    /**
+     * 日志级别
+     */
     private Integer logLevel;
+    /**
+     * session最大重连次数
+     */
+    private Integer maxRetryCount;
 
     public String getPrivateKeyPath() {
         return privateKeyPath;
@@ -91,5 +104,13 @@ public class Config {
 
     public void setLogLevel(Integer logLevel) {
         this.logLevel = logLevel;
+    }
+
+    public Integer getMaxRetryCount() {
+        return maxRetryCount;
+    }
+
+    public void setMaxRetryCount(Integer maxRetryCount) {
+        this.maxRetryCount = maxRetryCount;
     }
 }
