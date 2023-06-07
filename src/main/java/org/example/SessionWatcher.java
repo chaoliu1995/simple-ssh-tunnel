@@ -7,13 +7,19 @@ public class SessionWatcher implements Runnable {
 
     private Session session;
     /**
-     * Session重试次数
+     * Session重连次数
      */
     private Integer retryCount = 0;
+    /**
+     * 最大重连次数
+     */
     private Integer maxRetryCount = 3;
+    /**
+     * 主程序是否退出
+     */
     private boolean programIsExit = false;
     /**
-     * 是否退出
+     * SessionWatcher是否退出
      */
     private boolean isExit = false;
 
@@ -27,13 +33,12 @@ public class SessionWatcher implements Runnable {
 
     @Override
     public void run() {
-        Print.info("SessionWatcher run");
+        Print.info("SessionWatcher Run");
         while (!programIsExit){
             if(session.isConnected()){
                 try {
                     Thread.sleep(5000);
                 } catch (Exception e) {
-                    //throw new RuntimeException(e);
                     Print.error("isConnected Sleep Exception");
                     break;
                 }
@@ -41,13 +46,11 @@ public class SessionWatcher implements Runnable {
                 //重试次数+1
                 retryCount = retryCount + 1;
                 try {
-                    Print.info("Session Disconnect");
                     SessionUtils.disconnect(session);
-                    Print.info("getSession");
                     session = SessionUtils.getSession(this.jsch, this.config);
-                    Print.info("connect");
+                    Print.info("Connect");
                     session.connect();
-                    Print.info("setPortForwardingL");
+                    Print.info("Port Forwarding Local");
                     session.setPortForwardingL(config.getLocalPort(),config.getRemoteHost(),config.getRemotePort());
                     Print.info("Reset RetryCount");
                     //连接成功后，重试次数置0
@@ -55,16 +58,14 @@ public class SessionWatcher implements Runnable {
                 } catch (Exception e) {
                     Print.error("Reconnect Exception：" + e.getMessage());
                     e.printStackTrace();
-                    //throw new RuntimeException(e);
                     SessionUtils.disconnect(session);
                     if(retryCount >= maxRetryCount){
                         break;
                     }
                     try {
-                        Thread.sleep(3000);
+                        Thread.sleep(5000);
                     } catch (InterruptedException ex) {
                         Print.error("Reconnect Sleep Exception");
-                        //throw new RuntimeException(ex);
                         break;
                     }
                 }

@@ -23,29 +23,24 @@ public class Main {
         jsch.addIdentity(config.getPrivateKeyPath(),config.getPassphrase());
 
         try{
-            Print.info("get session");
             session = SessionUtils.getSession(jsch, config);
-            Print.info("connect...");
+            Print.info("Connect");
             session.connect();
-            Print.info("port forwarding...");
+            Print.info("Port Forwarding Local");
             //本地端口转发
             session.setPortForwardingL(config.getLocalPort(),config.getRemoteHost(),config.getRemotePort());
             SessionWatcher sessionWatcher = new SessionWatcher(session, jsch, config);
             if(config.getMaxRetryCount() != null && config.getMaxRetryCount() > 0){
                 sessionWatcher.setMaxRetryCount(config.getMaxRetryCount());
             }
-            Print.info("start SessionWatcher");
+            Print.info("Start SessionWatcher");
             new Thread(sessionWatcher,"SessionWatcher").start();
             doShutDownWork(session,sessionWatcher);
             Print.info("running...");
         }catch (Exception e){
-            Print.info("catch Exception");
             Print.error(e.getMessage());
-            if(session != null){
-                Print.info("disconnect...");
-                session.disconnect();
-                Print.info("disconnect end");
-            }
+            e.printStackTrace();
+            SessionUtils.disconnect(session);
         }
     }
 
@@ -85,8 +80,8 @@ public class Main {
         //注册新的虚拟机来关闭钩子
         run.addShutdownHook(new Thread(() -> {
             //程序结束时进行的操作
-            Print.info("program exit");
-            Print.info("SessionWatcher set isExit=true");
+            Print.info("Program Exit");
+            Print.info("SessionWatcher Set isExit=true");
             sessionWatcher.setProgramIsExit(true);
             for(int i = 0; i < 5; i++){
                 try {
@@ -98,9 +93,7 @@ public class Main {
                     break;
                 }
             }
-            Print.info("disconnect...");
             SessionUtils.disconnect(session);
-            Print.info("disconnect end");
         }));
     }
 }

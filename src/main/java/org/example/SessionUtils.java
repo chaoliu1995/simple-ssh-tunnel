@@ -14,14 +14,24 @@ public class SessionUtils {
         Properties sessionConfig = new Properties();
         //SSH 公钥检查机制 no、ask、yes
         sessionConfig.put("StrictHostKeyChecking",config.getStrictHostKeyChecking());
+        Print.info("Get Session");
         Session session = jsch.getSession(config.getServerUser(),config.getServerHost(),config.getServerPort());
         session.setConfig(sessionConfig);
         return session;
     }
 
     public static void disconnect(Session session){
-        if(session != null && session.isConnected()){
-            session.disconnect();
+        Print.info("Session Disconnect Start");
+        if(session == null){
+            Print.info("Session is Null");
+            return;
         }
+        if(!session.isConnected()){
+            Print.info("Session Not Connected");
+            return;
+        }
+        Print.info("Session Disconnect");
+        session.disconnect();
+        Print.info("Session Disconnect End");
     }
 }
