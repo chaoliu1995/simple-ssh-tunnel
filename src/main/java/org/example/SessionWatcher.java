@@ -1,10 +1,11 @@
 package org.example;
 
+import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
 
-public class SessionWatcherRunnable implements Runnable {
+public class SessionWatcher implements Runnable {
 
-    private final Session session;
+    private Session session;
     /**
      * Session重试次数
      */
@@ -15,8 +16,13 @@ public class SessionWatcherRunnable implements Runnable {
      * 是否退出
      */
     private boolean isExit = false;
-    public SessionWatcherRunnable(Session session){
+
+    private final JSch jsch;
+    private final Config config;
+    public SessionWatcher(Session session, JSch jsch, Config config){
         this.session = session;
+        this.jsch = jsch;
+        this.config = config;
     }
 
     @Override
@@ -35,13 +41,22 @@ public class SessionWatcherRunnable implements Runnable {
                 //重试次数+1
                 retryCount = retryCount + 1;
                 try {
+                    Print.info("Session Disconnect");
+                    SessionUtils.disconnect(session);
+                    Print.info("getSession");
+                    session = SessionUtils.getSession(this.jsch, this.config);
+                    Print.info("connect");
                     session.connect();
+                    Print.info("setPortForwardingL");
+                    session.setPortForwardingL(config.getLocalPort(),config.getRemoteHost(),config.getRemotePort());
+                    Print.info("Reset RetryCount");
                     //连接成功后，重试次数置0
                     retryCount = 0;
                 } catch (Exception e) {
                     Print.error("Reconnect Exception：" + e.getMessage());
                     e.printStackTrace();
                     //throw new RuntimeException(e);
+                    SessionUtils.disconnect(session);
                     if(retryCount >= maxRetryCount){
                         break;
                     }

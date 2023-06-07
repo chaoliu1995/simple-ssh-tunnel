@@ -8,6 +8,9 @@ import java.io.IOException;
 import java.util.Properties;
 
 public class Main {
+
+    private static Session session = null;
+
     public static void main(String[] args) throws Exception {
         if(args.length < 1){
             Print.info("请输入配置文件路径");
@@ -18,27 +21,22 @@ public class Main {
         JSch.setLogger(new SimpleLogger(config.getLogLevel()));
         //添加私钥
         jsch.addIdentity(config.getPrivateKeyPath(),config.getPassphrase());
-        Properties sessionConfig = new Properties();
-        //SSH 公钥检查机制 no、ask、yes
-        sessionConfig.put("StrictHostKeyChecking",config.getStrictHostKeyChecking());
-        Session session = null;
+
         try{
             Print.info("get session");
-            session = jsch.getSession(config.getServerUser(),config.getServerHost(),config.getServerPort());
-            session.setConfig(sessionConfig);
+            session = SessionUtils.getSession(jsch, config);
             Print.info("connect...");
             session.connect();
             Print.info("port forwarding...");
             //本地端口转发
-            //localPort, remoteHost, remotePort
             session.setPortForwardingL(config.getLocalPort(),config.getRemoteHost(),config.getRemotePort());
-            SessionWatcherRunnable runnable = new SessionWatcherRunnable(session);
+            SessionWatcher sessionWatcher = new SessionWatcher(session, jsch, config);
             if(config.getMaxRetryCount() != null && config.getMaxRetryCount() > 0){
-                runnable.setMaxRetryCount(config.getMaxRetryCount());
+                sessionWatcher.setMaxRetryCount(config.getMaxRetryCount());
             }
             Print.info("start SessionWatcher");
-            new Thread(runnable,"SessionWatcher").start();
-            doShutDownWork(session,runnable);
+            new Thread(sessionWatcher,"SessionWatcher").start();
+            doShutDownWork(session,sessionWatcher);
             Print.info("running...");
         }catch (Exception e){
             Print.info("catch Exception");
@@ -79,29 +77,29 @@ public class Main {
     /**
      * 程序退出时清理资源 1.退出用于重连的线程 2.断开Session连接
      * @param session
-     * @param runnable
+     * @param sessionWatcher
      */
-    private static void doShutDownWork(final Session session, final SessionWatcherRunnable runnable) {
+    private static void doShutDownWork(final Session session, final SessionWatcher sessionWatcher) {
         //当前 Java 应用程序相关的运行时对象
-        Runtime run=Runtime.getRuntime();
+        Runtime run = Runtime.getRuntime();
         //注册新的虚拟机来关闭钩子
         run.addShutdownHook(new Thread(() -> {
             //程序结束时进行的操作
             Print.info("program exit");
             Print.info("SessionWatcher set isExit=true");
-            runnable.setProgramIsExit(true);
+            sessionWatcher.setProgramIsExit(true);
             for(int i = 0; i < 5; i++){
                 try {
                     Thread.sleep(3000);
                 } catch (Exception e) {
                     Print.error(e.getMessage());
                 }
-                if(runnable.isExit()){
+                if(sessionWatcher.isExit()){
                     break;
                 }
             }
             Print.info("disconnect...");
-            session.disconnect();
+            SessionUtils.disconnect(session);
             Print.info("disconnect end");
         }));
     }
