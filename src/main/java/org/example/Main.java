@@ -1,15 +1,12 @@
 package org.example;
 
 import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.Session;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
 
 public class Main {
-
-    private static Session session = null;
 
     public static void main(String[] args) throws Exception {
         if(args.length < 1){
@@ -23,24 +20,17 @@ public class Main {
         jsch.addIdentity(config.getPrivateKeyPath(),config.getPassphrase());
 
         try{
-            session = SessionUtils.getSession(jsch, config);
-            Print.info("Connect");
-            session.connect();
-            Print.info("Port Forwarding Local");
-            //本地端口转发
-            session.setPortForwardingL(config.getLocalPort(),config.getRemoteHost(),config.getRemotePort());
-            SessionWatcher sessionWatcher = new SessionWatcher(session, jsch, config);
+            SessionWatcher sessionWatcher = new SessionWatcher(jsch, config);
             if(config.getMaxRetryCount() != null && config.getMaxRetryCount() > 0){
                 sessionWatcher.setMaxRetryCount(config.getMaxRetryCount());
             }
             Print.info("Start SessionWatcher");
             new Thread(sessionWatcher,"SessionWatcher").start();
-            doShutDownWork(session,sessionWatcher);
+            doShutDownWork(sessionWatcher);
             Print.info("running...");
         }catch (Exception e){
             Print.error(e.getMessage());
             e.printStackTrace();
-            SessionUtils.disconnect(session);
         }
     }
 
@@ -71,10 +61,9 @@ public class Main {
 
     /**
      * 程序退出时清理资源 1.退出用于重连的线程 2.断开Session连接
-     * @param session
      * @param sessionWatcher
      */
-    private static void doShutDownWork(final Session session, final SessionWatcher sessionWatcher) {
+    private static void doShutDownWork(final SessionWatcher sessionWatcher) {
         //当前 Java 应用程序相关的运行时对象
         Runtime run = Runtime.getRuntime();
         //注册新的虚拟机来关闭钩子
@@ -93,7 +82,7 @@ public class Main {
                     break;
                 }
             }
-            SessionUtils.disconnect(session);
+            Print.info("ShutdownHook Exit");
         }));
     }
 }

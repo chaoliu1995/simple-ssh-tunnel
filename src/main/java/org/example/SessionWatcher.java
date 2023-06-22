@@ -1,6 +1,7 @@
 package org.example;
 
 import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 
 public class SessionWatcher implements Runnable {
@@ -25,10 +26,15 @@ public class SessionWatcher implements Runnable {
 
     private final JSch jsch;
     private final Config config;
-    public SessionWatcher(Session session, JSch jsch, Config config){
-        this.session = session;
+    public SessionWatcher(JSch jsch, Config config) throws JSchException {
         this.jsch = jsch;
         this.config = config;
+        this.session = SessionUtils.getSession(jsch, config);
+        Print.info("Connect");
+        session.connect();
+        Print.info("Port Forwarding Local");
+        //本地端口转发
+        session.setPortForwardingL(config.getLocalPort(),config.getRemoteHost(),config.getRemotePort());
     }
 
     @Override
@@ -71,8 +77,9 @@ public class SessionWatcher implements Runnable {
                 }
             }
         }
-        this.isExit = true;
+        SessionUtils.disconnect(session);
         Print.info("SessionWatcher Exit");
+        this.isExit = true;
     }
 
     public void setMaxRetryCount(Integer maxRetryCount) {
