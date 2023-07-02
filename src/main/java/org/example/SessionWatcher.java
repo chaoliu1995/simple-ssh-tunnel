@@ -1,8 +1,6 @@
 package org.example;
 
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
+import com.jcraft.jsch.*;
 
 public class SessionWatcher implements Runnable {
 
@@ -41,9 +39,9 @@ public class SessionWatcher implements Runnable {
     public void run() {
         Print.info("SessionWatcher Run");
         while (!programIsExit){
-            if(session.isConnected()){
+            if(session.isConnected() && isConnected()){
                 try {
-                    Thread.sleep(5000);
+                    Thread.sleep(10000);
                 } catch (Exception e) {
                     Print.error("isConnected Sleep Exception");
                     break;
@@ -92,5 +90,28 @@ public class SessionWatcher implements Runnable {
 
     public boolean isExit() {
         return isExit;
+    }
+
+    /**
+     * 执行一个简单命令，测试连接是否中断
+     * @return
+     */
+    private boolean isConnected(){
+        ChannelExec channelExec = null;
+        try{
+            channelExec = (ChannelExec)session.openChannel("exec");
+            channelExec.setCommand("ls ~/");
+            channelExec.connect();
+            if(channelExec.isConnected()){
+                channelExec.disconnect();
+            }
+            return true;
+        }catch (Exception e){
+            Print.error("channelExec error: " + e.getMessage());
+            if(channelExec != null && channelExec.isConnected()){
+                channelExec.disconnect();
+            }
+            return false;
+        }
     }
 }
